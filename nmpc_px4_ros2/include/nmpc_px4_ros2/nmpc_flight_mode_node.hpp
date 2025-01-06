@@ -73,7 +73,8 @@ public:
 
   void updateSetpoint(float dt_s) override
   {
-    // TODO: Implement state machine for various options: 1. Approach trajectory, track trajectory, hold last position
+    // TODO: Implement state machine for various options: 1. Approach trajectory if too far but near enough, track trajectory, hold last position
+    // TODO: Throw error if starting point of trajectory too far away from current position
     if(iter < ref_traj_len-N)
     {
       Eigen::Vector3f pos_ned = _vehicle_local_position_velocity->positionNed();
@@ -85,7 +86,6 @@ public:
       Eigen::Quaternionf quat_enu = _nedfrd2enuflu(quat_ned);
       Eigen::Vector3f lin_vel_enu(lin_vel_ned(1), lin_vel_ned(0), -lin_vel_ned(2));
       Eigen::Vector3f ang_vel_flu(ang_vel_frd(0), -ang_vel_frd(1), -ang_vel_frd(2));
-      // Eigen::Vector3f ang_vel_enu = quat_enu.toRotationMatrix().transpose() * ang_vel_flu;
 
       double x_init[NX];
       x_init[0] = pos_enu(0);
@@ -198,7 +198,8 @@ private:
     _odom_pub->publish(odom_msg);
   }
 
-  Eigen::Quaternionf _nedfrd2enuflu(const Eigen::Quaternionf& quat_ned) const {
+  Eigen::Quaternionf _nedfrd2enuflu(const Eigen::Quaternionf& quat_ned) const 
+  {
     Eigen::Quaternionf rotation_flu(0, 1, 0, 0);
     Eigen::Quaternionf rotation_enu(0, sqrt(2)/2, sqrt(2)/2, 0);
     Eigen::Quaternionf quat_ned_flu = quat_ned * rotation_flu;

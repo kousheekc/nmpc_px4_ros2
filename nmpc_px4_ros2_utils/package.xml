@@ -4,7 +4,7 @@
   <name>nmpc_px4_ros2_utils</name>
   <version>0.0.1</version>
   <description>Package containing utility nodes that are required by the nmpc_px4_ros2 package</description>
-  <maintainer email="kousheekc@gmail.com">kousheek</maintainer>
+  <maintainer email="kousheekc@gmail.com">Kousheek Chakraborty</maintainer>
   <license>BSD-3-Clause</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

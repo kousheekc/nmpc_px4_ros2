@@ -15,10 +15,12 @@ find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(px4_ros2_cpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
-find_package(px4_ros2_cpp REQUIRED)
+find_package(px4_msgs REQUIRED)
+
 
 set(acados_include "${PROJECT_SOURCE_DIR}/../3rd_party/acados/include")
 set(acados_lib "${PROJECT_SOURCE_DIR}/../3rd_party/acados/lib")
@@ -46,6 +48,7 @@ ament_target_dependencies(nmpc_flight_mode
   std_msgs
   geometry_msgs
   nav_msgs
+  px4_msgs
 )
 
 target_link_libraries(nmpc_flight_mode
