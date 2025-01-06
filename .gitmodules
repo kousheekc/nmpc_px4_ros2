@@ -1,0 +1,12 @@
+[submodule "px4_msgs"]
+	path = px4_msgs
+	url = https://github.com/PX4/px4_msgs.git
+	branch = main
+[submodule "px4-ros2-interface-lib"]
+	path = px4-ros2-interface-lib
+	url = https://github.com/Auterion/px4-ros2-interface-lib.git
+	branch = main
+[submodule "3rd_party/acados"]
+	path = 3rd_party/acados
+	url = https://github.com/acados/acados.git
+	branch = master
