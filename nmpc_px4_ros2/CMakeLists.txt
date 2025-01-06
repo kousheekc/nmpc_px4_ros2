@@ -58,6 +58,12 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(FILES 
+  ${full_model_build}/libacados_ocp_solver_nmpc_flight_mode.so
+  ${acados_lib}/libacados.so
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 install(DIRECTORY 
   config
   DESTINATION share/${PROJECT_NAME}

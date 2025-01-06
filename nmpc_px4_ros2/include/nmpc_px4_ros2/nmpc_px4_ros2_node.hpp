@@ -113,7 +113,7 @@ public:
       Eigen::Quaternionf quat_enu = NED_FRD_2_ENU_FLU(quat_ned);
       Eigen::Vector3f lin_vel_enu(lin_vel_ned(1), lin_vel_ned(0), -lin_vel_ned(2));
       Eigen::Vector3f ang_vel_flu(ang_vel_frd(0), -ang_vel_frd(1), -ang_vel_frd(2));
-      Eigen::Vector3f ang_vel_enu = quat_enu.toRotationMatrix() * ang_vel_flu;
+      // Eigen::Vector3f ang_vel_enu = quat_enu.toRotationMatrix().transpose() * ang_vel_flu;
 
       double x_init[NX];
       x_init[0] = pos_enu(0);
@@ -126,9 +126,9 @@ public:
       x_init[7] = lin_vel_enu(0);
       x_init[8] = lin_vel_enu(1);
       x_init[9] = lin_vel_enu(2);
-      x_init[10] = ang_vel_enu(0);
-      x_init[11] = ang_vel_enu(1);
-      x_init[12] = ang_vel_enu(2);
+      x_init[10] = ang_vel_flu(0);
+      x_init[11] = ang_vel_flu(1);
+      x_init[12] = ang_vel_flu(2);
 
       ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", x_init);
       ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubx", x_init);
@@ -171,12 +171,11 @@ public:
 
       Eigen::Matrix<float, 12, 1> setpoint;
       int set = 1;
-      RCLCPP_INFO(_node.get_logger(), "Iter %d, thrust setpoint: %f, %f, %f, %f", iter, sqrt(utraj[4*set+1]/8.580775e-06)/1000, sqrt(utraj[4*set+3]/8.580775e-06)/1000, sqrt(utraj[4*set+2]/8.580775e-06)/1000, sqrt(utraj[4*set+0]/8.580775e-06)/1000);
-      RCLCPP_INFO(_node.get_logger(), "Iter %d, prev u: %f, %f, %f, %f", iter, prev_u[0], prev_u[2], prev_u[3], prev_u[1]);
+      // RCLCPP_INFO(_node.get_logger(), "Iter %d, thrust setpoint: %f, %f, %f, %f", iter, sqrt(utraj[4*set+1]/8.580775e-06)/1000, sqrt(utraj[4*set+3]/8.580775e-06)/1000, sqrt(utraj[4*set+2]/8.580775e-06)/1000, sqrt(utraj[4*set+0]/8.580775e-06)/1000);
+      // RCLCPP_INFO(_node.get_logger(), "Iter %d, prev u: %f, %f, %f, %f", iter, prev_u[0], prev_u[2], prev_u[3], prev_u[1]);
       
       std::copy(utraj + set * 4, utraj + set * 4 + 4, prev_u);
-      // setpoint << sqrt(utraj[5]/8.580775e-06)/1000, sqrt(utraj[7]/8.580775e-06)/1000, sqrt(utraj[6]/8.580775e-06)/1000, sqrt(utraj[4]/8.580775e-06)/1000, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
-      setpoint << sqrt(utraj[4*set+1]/8.580775e-06)/1000, sqrt(utraj[4*set+3]/8.580775e-06)/1000, sqrt(utraj[4*set+2]/8.580775e-06)/1000, sqrt(utraj[4*set+0]/8.580775e-06)/1000, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+      setpoint << sqrt(utraj[4*set+1]/8.580775e-06)/1000, sqrt(utraj[4*set+3]/8.580775e-06)/1000, sqrt(utraj[4*set+2]/8.580775e-06)/1000, sqrt(utraj[4*set+0]/8.580775e-06)/1000, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
       // setpoint << 0.0, 0.0, 1.0, 0.0, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
       _thrust_setpoint->updateMotors(setpoint);
       iter++;
