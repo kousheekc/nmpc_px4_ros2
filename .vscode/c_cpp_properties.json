@@ -1,0 +1,31 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "${default}",
+        "limitSymbolsToIncludedHeaders": false
+      },
+      "includePath": [
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/install/px4_ros2_cpp/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/install/px4_msgs/include/**",
+        "/opt/ros/humble/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/examples/cpp/modes/fw_attitude/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/examples/cpp/modes/goto/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/examples/cpp/modes/goto_global/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/examples/cpp/modes/manual/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/examples/cpp/modes/mode_with_executor/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/examples/cpp/modes/rtl_replacement/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/examples/cpp/navigation/global_navigation/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/examples/cpp/navigation/local_navigation/include/**",
+        "/home/kousheek/Dev/personal/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/px4-ros2-interface-lib/px4_ros2_cpp/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS",
+      "intelliSenseMode": "gcc-x64",
+      "compilerPath": "/usr/bin/gcc",
+      "cStandard": "gnu11",
+      "cppStandard": "c++14"
+    }
+  ],
+  "version": 4
+}
