@@ -8,6 +8,7 @@
 
 #include <Eigen/Eigen>
 #include <vector>
+#include <string>
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -21,9 +22,7 @@
 
 #define N      NMPC_FLIGHT_MODE_N
 #define NX     NMPC_FLIGHT_MODE_NX
-#define NP     NMPC_FLIGHT_MODE_NP
 #define NU     NMPC_FLIGHT_MODE_NU
-#define NBX0   NMPC_FLIGHT_MODE_NBX0
 #define NY     NMPC_FLIGHT_MODE_NY
 
 using namespace std::chrono_literals; // NOLINT
