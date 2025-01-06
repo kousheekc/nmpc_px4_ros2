@@ -17,9 +17,7 @@
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 
 #include "acados_c/ocp_nlp_interface.h"
-#include "acados_c/external_function_interface.h"
 #include "acados_solver_nmpc_flight_mode.h"
-#include "blasfeo/include/blasfeo_d_aux_ext_dep.h"
 
 #define N      NMPC_FLIGHT_MODE_N
 #define NX     NMPC_FLIGHT_MODE_NX
