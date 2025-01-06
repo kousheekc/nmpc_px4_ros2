@@ -7,21 +7,15 @@
 #include <px4_ros2/odometry/attitude.hpp>
 
 #include <Eigen/Eigen>
+#include <vector>
 
 #include <rclcpp/rclcpp.hpp>
-#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <std_msgs/msg/string.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <nav_msgs/msg/path.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <fstream>
-
-#include "acados/utils/print.h"
-#include "acados/utils/math.h"
 #include "acados_c/ocp_nlp_interface.h"
 #include "acados_c/external_function_interface.h"
 #include "acados_solver_nmpc_flight_mode.h"
@@ -32,8 +26,7 @@
 #define NP     NMPC_FLIGHT_MODE_NP
 #define NU     NMPC_FLIGHT_MODE_NU
 #define NBX0   NMPC_FLIGHT_MODE_NBX0
-#define NY     NX+NU
-#define NP_GLOBAL   NMPC_FLIGHT_MODE_NP_GLOBAL
+#define NY     NMPC_FLIGHT_MODE_NY
 
 using namespace std::chrono_literals; // NOLINT
 static const std::string kName = "NMPC Flight Mode";
@@ -51,7 +44,7 @@ public:
     auto qos_profile = rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
     qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
 
-    _odom_sub = node.create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", qos_profile, std::bind(&NMPCFlightMode::odom_callback, this, std::placeholders::_1));
+    _odom_sub = node.create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", qos_profile, std::bind(&NMPCFlightMode::_odomCallback, this, std::placeholders::_1));
 
     _thrust_setpoint = std::make_shared<px4_ros2::DirectActuatorsSetpointType>(*this);
     _vehicle_local_position_velocity = std::make_shared<px4_ros2::OdometryLocalPosition>(*this);
@@ -62,7 +55,7 @@ public:
     status = nmpc_flight_mode_acados_create_with_discretization(acados_ocp_capsule, N, NULL);
     if (status)
     {
-        printf("nmpc_flight_mode_acados_create() returned status %d. Exiting.\n", status);
+        RCLCPP_ERROR(_node.get_logger(), "nmpc_flight_mode_acados_create() returned status %d. Exiting.\n", status);
         exit(1);
     }
     nlp_config = nmpc_flight_mode_acados_get_nlp_config(acados_ocp_capsule);
@@ -75,25 +68,6 @@ public:
 
   void onActivate() override 
   {
-    std::string ref_traj_path = ament_index_cpp::get_package_share_directory("nmpc_px4_ros2") + "/config/traj/" + _node.get_parameter("ref_traj").as_string() + ".txt";
-    ref_traj_len = readDataFromFile(ref_traj_path.c_str(), ref_traj);
-    RCLCPP_INFO(_node.get_logger(), "Reference path with '%d' points", ref_traj_len);
-
-    auto ref_path_msg = nav_msgs::msg::Path();
-    ref_path_msg.header.frame_id = "world";
-    ref_path_msg.header.stamp = _node.get_clock()->now();
-    for (auto & state : ref_traj)
-    {
-      auto pose = geometry_msgs::msg::PoseStamped();
-      pose.header.frame_id = "map";
-      pose.header.stamp = _node.get_clock()->now();
-      pose.pose.position.x = state[0];
-      pose.pose.position.y = state[1];
-      pose.pose.position.z = state[2];
-      ref_path_msg.poses.push_back(pose);
-    }
-    _ref_traj_pub->publish(ref_path_msg);
-
     iter = 0;
     std::fill(std::begin(prev_u), std::end(prev_u), 4.9033);
   }
@@ -102,6 +76,7 @@ public:
 
   void updateSetpoint(float dt_s) override
   {
+    // TODO: Implement state machine for various options: 1. Approach trajectory, track trajectory, hold last position
     if(iter < ref_traj_len-N)
     {
       Eigen::Vector3f pos_ned = _vehicle_local_position_velocity->positionNed();
@@ -110,7 +85,7 @@ public:
       Eigen::Vector3f ang_vel_frd = _vehicle_angular_velocity->angularVelocityFrd();
 
       Eigen::Vector3f pos_enu(pos_ned(1), pos_ned(0), -pos_ned(2));
-      Eigen::Quaternionf quat_enu = NED_FRD_2_ENU_FLU(quat_ned);
+      Eigen::Quaternionf quat_enu = _nedfrd2enuflu(quat_ned);
       Eigen::Vector3f lin_vel_enu(lin_vel_ned(1), lin_vel_ned(0), -lin_vel_ned(2));
       Eigen::Vector3f ang_vel_flu(ang_vel_frd(0), -ang_vel_frd(1), -ang_vel_frd(2));
       // Eigen::Vector3f ang_vel_enu = quat_enu.toRotationMatrix().transpose() * ang_vel_flu;
@@ -203,48 +178,15 @@ private:
   nmpc_flight_mode_solver_capsule *acados_ocp_capsule;
   int status;
   int iter;
-  int ref_traj_len;
   double prev_u[NU];
-
+  int ref_traj_len;
   std::vector<std::vector<double>> ref_traj;
 
 private:
-	int readDataFromFile(const char* fileName, std::vector<std::vector<double>> &data)
-  {
-    std::ifstream file(fileName);
-    std::string line;
-    int num_of_steps = 0;
-
-    if (file.is_open())
-    {
-      while(getline(file, line))
-      {
-        ++num_of_steps;
-        std::istringstream linestream( line );
-        std::vector<double> linedata;
-        double number;
-
-        while( linestream >> number )
-        {
-          linedata.push_back( number );
-        }
-        data.push_back( linedata );
-      }
-
-      file.close();
-    }
-    else
-    {
-      return 0;
-    }
-
-    return num_of_steps;
-  }
-
-  void odom_callback(const px4_msgs::msg::VehicleOdometry & msg) const
+  void _odomCallback(const px4_msgs::msg::VehicleOdometry & msg) const
   {
     Eigen::Quaternionf quat_ned(msg.q[0], msg.q[1], msg.q[2], msg.q[3]);
-    Eigen::Quaternionf quat_enu = NED_FRD_2_ENU_FLU(quat_ned);
+    Eigen::Quaternionf quat_enu = _nedfrd2enuflu(quat_ned);
 
     auto odom_msg = nav_msgs::msg::Odometry();
     odom_msg.header.frame_id = "world";
@@ -259,11 +201,16 @@ private:
     _odom_pub->publish(odom_msg);
   }
 
-  Eigen::Quaternionf NED_FRD_2_ENU_FLU(const Eigen::Quaternionf& quat_ned) const {
+  Eigen::Quaternionf _nedfrd2enuflu(const Eigen::Quaternionf& quat_ned) const {
     Eigen::Quaternionf rotation_flu(0, 1, 0, 0);
     Eigen::Quaternionf rotation_enu(0, sqrt(2)/2, sqrt(2)/2, 0);
     Eigen::Quaternionf quat_ned_flu = quat_ned * rotation_flu;
     Eigen::Quaternionf quat_enu_flu = rotation_enu * quat_ned_flu;
     return quat_enu_flu;
+  }
+
+  float _thrust2rpm(float thrust) const
+  {
+    return sqrt(thrust/8.580775e-06)/1000;
   }
 };

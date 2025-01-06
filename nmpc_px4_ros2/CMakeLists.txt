@@ -37,7 +37,7 @@ include_directories(
 
 link_directories(${full_model_build})
 
-add_executable(nmpc_flight_mode src/main.cpp)
+add_executable(nmpc_flight_mode src/nmpc_flight_mode_node.cpp)
 
 ament_target_dependencies(nmpc_flight_mode 
   Eigen3 
