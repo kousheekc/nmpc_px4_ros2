@@ -23,7 +23,11 @@ include_directories(
   ${Eigen3_INCLUDE_DIRS}
 )
 
+add_library(utils_lib src/utils.cpp)
+
 add_executable(odometry_republisher_node src/odometry_republisher_node.cpp)
+
+target_link_libraries(odometry_republisher_node utils_lib)
 
 ament_target_dependencies(odometry_republisher_node 
   Eigen3 
@@ -31,6 +35,14 @@ ament_target_dependencies(odometry_republisher_node
   nav_msgs
   px4_msgs
 )
+
+install(TARGETS utils_lib
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin)
+
+install(DIRECTORY include/
+        DESTINATION include)
 
 install(TARGETS 
   odometry_republisher_node
