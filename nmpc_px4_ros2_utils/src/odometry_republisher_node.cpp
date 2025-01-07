@@ -1,7 +1,7 @@
 #include <memory>
 #include <Eigen/Eigen>
 
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 
@@ -11,13 +11,15 @@ class OdometryRepublisher : public rclcpp::Node
 {
   public:
     OdometryRepublisher()
-    : Node("odometry_republisher_node")
+    : Node("odom_repub_node")
     {
-        auto qos_profile = rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
-        qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
+      auto qos_profile = rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
+      qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
 
-        _px4_odom_sub = this->create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", qos_profile, std::bind(&OdometryRepublisher::_odomCallback, this, std::placeholders::_1));
-        _ros2_odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+      _px4_odom_sub = this->create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", qos_profile, std::bind(&OdometryRepublisher::_odomCallback, this, std::placeholders::_1));
+      _ros2_odom_pub = this->create_publisher<nav_msgs::msg::Odometry>("odom", 10);
+
+      RCLCPP_INFO(this->get_logger(), "Republishing odom from PX4 to ROS2");
     }
 
   private:

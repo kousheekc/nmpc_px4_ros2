@@ -1,6 +1,6 @@
-#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/rclcpp.hpp>
 
-#include <px4_ros2/components/node_with_mode.hpp>
+#include "px4_ros2/components/node_with_mode.hpp"
 #include "nmpc_px4_ros2/nmpc_flight_mode_node.hpp"
 
 using MyNodeWithMode = px4_ros2::NodeWithMode<NMPCFlightMode>;

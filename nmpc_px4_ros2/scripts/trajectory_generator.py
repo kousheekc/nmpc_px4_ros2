@@ -13,7 +13,8 @@ def _plot(trajectory, starting_point):
     plt.show()
     
 def _save(filename, trajectory):
-    directory = os.path.join(os.path.pardir, 'config', 'traj')
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    directory = os.path.join(script_dir, os.path.pardir, os.path.pardir, 'nmpc_px4_ros2_utils', 'config', 'traj')
     os.makedirs(directory, exist_ok=True)
     filepath = os.path.join(directory, filename)
     with open(filepath, 'w') as file:
