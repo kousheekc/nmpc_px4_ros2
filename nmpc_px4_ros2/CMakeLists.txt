@@ -1,3 +1,4 @@
+# TODO: Update cmakelists such that the shared libraries are directly linked to the executable without having to modify LD_LIBRARY_PATH
 cmake_minimum_required(VERSION 3.8)
 project(nmpc_px4_ros2)
 
@@ -20,7 +21,8 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(px4_msgs REQUIRED)
-
+find_package(nmpc_px4_ros2_interfaces REQUIRED)
+find_package(nmpc_px4_ros2_utils REQUIRED)
 
 set(acados_include "${PROJECT_SOURCE_DIR}/../3rd_party/acados/include")
 set(acados_lib "${PROJECT_SOURCE_DIR}/../3rd_party/acados/lib")
@@ -38,6 +40,7 @@ include_directories(
 )
 
 link_directories(${full_model_build})
+link_directories(${acados_lib})
 
 add_executable(nmpc_flight_mode src/nmpc_flight_mode_node.cpp)
 
@@ -49,6 +52,8 @@ ament_target_dependencies(nmpc_flight_mode
   geometry_msgs
   nav_msgs
   px4_msgs
+  nmpc_px4_ros2_interfaces
+  nmpc_px4_ros2_utils
 )
 
 target_link_libraries(nmpc_flight_mode
@@ -58,12 +63,6 @@ target_link_libraries(nmpc_flight_mode
 
 install(TARGETS 
   nmpc_flight_mode
-  DESTINATION lib/${PROJECT_NAME}
-)
-
-install(FILES 
-  ${full_model_build}/libacados_ocp_solver_nmpc_flight_mode.so
-  ${acados_lib}/libacados.so
   DESTINATION lib/${PROJECT_NAME}
 )
 

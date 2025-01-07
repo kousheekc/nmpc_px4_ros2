@@ -16,9 +16,12 @@
 #include <nav_msgs/msg/path.hpp>
 #include <nav_msgs/msg/odometry.hpp>
 #include "px4_msgs/msg/vehicle_odometry.hpp"
+#include "nmpc_px4_ros2_interfaces/msg/state_trajectory.hpp"
 
 #include "acados_c/ocp_nlp_interface.h"
 #include "acados_solver_nmpc_flight_mode.h"
+
+#include "nmpc_px4_ros2_utils/utils.hpp"
 
 #define N      NMPC_FLIGHT_MODE_N
 #define NX     NMPC_FLIGHT_MODE_NX
@@ -35,13 +38,8 @@ public:
   : ModeBase(node, kName), _node(node)
   {
     _node.declare_parameter("ref_traj", "circle");
-    _ref_traj_pub = _node.create_publisher<nav_msgs::msg::Path>("ref_traj", 10);
-    _optimal_traj_pub = _node.create_publisher<nav_msgs::msg::Path>("optimal_traj", 10);
-    _odom_pub = _node.create_publisher<nav_msgs::msg::Odometry>("odom", 10);
-    auto qos_profile = rclcpp::QoS(rclcpp::QoSInitialization::from_rmw(rmw_qos_profile_sensor_data));
-    qos_profile.reliability(RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT);
 
-    _odom_sub = node.create_subscription<px4_msgs::msg::VehicleOdometry>("/fmu/out/vehicle_odometry", qos_profile, std::bind(&NMPCFlightMode::_odomCallback, this, std::placeholders::_1));
+    _ref_traj_sub = node.create_subscription<nmpc_px4_ros2_interfaces::msg::StateTrajectory>("/ref_traj", 10, std::bind(&NMPCFlightMode::_refTrajCallback, this, std::placeholders::_1));
 
     _thrust_setpoint = std::make_shared<px4_ros2::DirectActuatorsSetpointType>(*this);
     _vehicle_local_position_velocity = std::make_shared<px4_ros2::OdometryLocalPosition>(*this);
@@ -82,10 +80,10 @@ public:
       Eigen::Vector3f lin_vel_ned = _vehicle_local_position_velocity->velocityNed();
       Eigen::Vector3f ang_vel_frd = _vehicle_angular_velocity->angularVelocityFrd();
 
-      Eigen::Vector3f pos_enu(pos_ned(1), pos_ned(0), -pos_ned(2));
-      Eigen::Quaternionf quat_enu = _nedfrd2enuflu(quat_ned);
-      Eigen::Vector3f lin_vel_enu(lin_vel_ned(1), lin_vel_ned(0), -lin_vel_ned(2));
-      Eigen::Vector3f ang_vel_flu(ang_vel_frd(0), -ang_vel_frd(1), -ang_vel_frd(2));
+      Eigen::Vector3f pos_enu = utils::ned2enuPosition(pos_ned);
+      Eigen::Quaternionf quat_enu = utils::nedfrd2enufluRotation(quat_ned);
+      Eigen::Vector3f lin_vel_enu = utils::ned2enuPosition(lin_vel_ned);
+      Eigen::Vector3f ang_vel_flu = utils::frd2fluAngVel(ang_vel_frd);
 
       double x_init[NX];
       x_init[0] = pos_enu(0);
@@ -156,10 +154,8 @@ public:
 
 private:
   rclcpp::Node & _node;
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr _ref_traj_pub;
   rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr _optimal_traj_pub;
-  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr _odom_pub;
-  rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr _odom_sub;
+  rclcpp::Subscription<nmpc_px4_ros2_interfaces::msg::StateTrajectory>::SharedPtr _ref_traj_sub;
 
   std::shared_ptr<px4_ros2::DirectActuatorsSetpointType> _thrust_setpoint;
   std::shared_ptr<px4_ros2::OdometryLocalPosition> _vehicle_local_position_velocity;
@@ -180,31 +176,31 @@ private:
   std::vector<std::vector<double>> ref_traj;
 
 private:
-  void _odomCallback(const px4_msgs::msg::VehicleOdometry & msg) const
+  void _refTrajCallback(const nmpc_px4_ros2_interfaces::msg::StateTrajectory & msg)
   {
-    Eigen::Quaternionf quat_ned(msg.q[0], msg.q[1], msg.q[2], msg.q[3]);
-    Eigen::Quaternionf quat_enu = _nedfrd2enuflu(quat_ned);
-
-    auto odom_msg = nav_msgs::msg::Odometry();
-    odom_msg.header.frame_id = "world";
-    odom_msg.header.stamp = _node.get_clock()->now();
-    odom_msg.pose.pose.position.x = msg.position[1];
-    odom_msg.pose.pose.position.y = msg.position[0];
-    odom_msg.pose.pose.position.z = -msg.position[2];
-    odom_msg.pose.pose.orientation.w = quat_enu.w();
-    odom_msg.pose.pose.orientation.x = quat_enu.x();
-    odom_msg.pose.pose.orientation.y = quat_enu.y();
-    odom_msg.pose.pose.orientation.z = quat_enu.z();
-    _odom_pub->publish(odom_msg);
-  }
-
-  Eigen::Quaternionf _nedfrd2enuflu(const Eigen::Quaternionf& quat_ned) const 
-  {
-    Eigen::Quaternionf rotation_flu(0, 1, 0, 0);
-    Eigen::Quaternionf rotation_enu(0, sqrt(2)/2, sqrt(2)/2, 0);
-    Eigen::Quaternionf quat_ned_flu = quat_ned * rotation_flu;
-    Eigen::Quaternionf quat_enu_flu = rotation_enu * quat_ned_flu;
-    return quat_enu_flu;
+    ref_traj_len = msg.len.data;
+    for (int i = 0; i < ref_traj_len; i++)
+    {
+      std::vector<double> state;
+      state.push_back(msg.poses[i].position.x);
+      state.push_back(msg.poses[i].position.y);
+      state.push_back(msg.poses[i].position.z);
+      state.push_back(msg.poses[i].orientation.w);
+      state.push_back(msg.poses[i].orientation.x);
+      state.push_back(msg.poses[i].orientation.y);
+      state.push_back(msg.poses[i].orientation.z);
+      state.push_back(msg.linear_velocities[i].x);
+      state.push_back(msg.linear_velocities[i].y);
+      state.push_back(msg.linear_velocities[i].z);
+      state.push_back(msg.angular_velocities[i].x);
+      state.push_back(msg.angular_velocities[i].y);
+      state.push_back(msg.angular_velocities[i].z);
+      state.push_back(msg.control_inputs[i].data[0]);
+      state.push_back(msg.control_inputs[i].data[1]);
+      state.push_back(msg.control_inputs[i].data[2]);
+      state.push_back(msg.control_inputs[i].data[3]);
+      ref_traj.push_back(state);
+    }
   }
 
   float _thrust2rpm(float thrust) const

@@ -24,12 +24,13 @@ include_directories(
   ${Eigen3_INCLUDE_DIRS}
 )
 
-add_library(utils_lib src/utils.cpp)
+add_library(utils_lib STATIC src/utils.cpp)
 
 add_executable(odom_repub_node src/odometry_republisher_node.cpp)
 add_executable(ref_traj_pub_node src/reference_trajectory_node.cpp)
 
-target_link_libraries(odom_repub_node utils_lib)
+ament_export_targets(utils_lib HAS_LIBRARY_TARGET)
+
 ament_target_dependencies(odom_repub_node 
   Eigen3 
   rclcpp
@@ -45,15 +46,18 @@ ament_target_dependencies(ref_traj_pub_node
   nmpc_px4_ros2_interfaces
 )
 
-install(TARGETS 
-  utils_lib
-  ARCHIVE DESTINATION lib
+target_link_libraries(odom_repub_node utils_lib)
+
+install(
+  TARGETS utils_lib
+  EXPORT utils_lib
   LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
+  INCLUDES DESTINATION include
 )
 
-install(DIRECTORY 
-  include/
+install(DIRECTORY include/
   DESTINATION include
 )
 
@@ -67,7 +71,7 @@ install(TARGETS
   ref_traj_pub_node
   DESTINATION lib/${PROJECT_NAME}
 )
-      
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
