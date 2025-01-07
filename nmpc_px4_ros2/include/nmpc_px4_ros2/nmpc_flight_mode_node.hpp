@@ -37,8 +37,7 @@ public:
   explicit NMPCFlightMode(rclcpp::Node & node)
   : ModeBase(node, kName), _node(node)
   {
-    _node.declare_parameter("ref_traj", "circle");
-
+    _optimal_traj_pub = _node.create_publisher<nav_msgs::msg::Path>("optimal_traj", 10);
     _ref_traj_sub = node.create_subscription<nmpc_px4_ros2_interfaces::msg::StateTrajectory>("/ref_traj", 10, std::bind(&NMPCFlightMode::_refTrajCallback, this, std::placeholders::_1));
 
     _thrust_setpoint = std::make_shared<px4_ros2::DirectActuatorsSetpointType>(*this);
@@ -129,7 +128,7 @@ public:
       for (int ii = 0; ii <= N; ii++)
       {
         auto pose = geometry_msgs::msg::PoseStamped();
-        pose.header.frame_id = "map";
+        pose.header.frame_id = "world";
         pose.header.stamp = _node.get_clock()->now();
         pose.pose.position.x = xtraj[ii*NX+0];
         pose.pose.position.y = xtraj[ii*NX+1];
@@ -178,6 +177,7 @@ private:
 private:
   void _refTrajCallback(const nmpc_px4_ros2_interfaces::msg::StateTrajectory & msg)
   {
+    RCLCPP_INFO(_node.get_logger(), "Reference trajectory received");
     ref_traj_len = msg.len.data;
     for (int i = 0; i < ref_traj_len; i++)
     {
