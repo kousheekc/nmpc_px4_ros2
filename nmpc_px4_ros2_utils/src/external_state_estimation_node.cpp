@@ -24,13 +24,13 @@ public:
 
     local_position_measurement.timestamp_sample = _node.get_clock()->now();
 
-    local_position_measurement.position_xy = Eigen::Vector2f {msg->pose.position.x, msg->pose.position.y};
+    local_position_measurement.position_xy = Eigen::Vector2f {msg->pose.position.x, -msg->pose.position.y};
     local_position_measurement.position_xy_variance = Eigen::Vector2f {0.1f, 0.1f};
 
-    local_position_measurement.position_z = msg->pose.position.z;
+    local_position_measurement.position_z = -msg->pose.position.z;
     local_position_measurement.position_z_variance = 0.1F;
 
-    local_position_measurement.attitude_quaternion = Eigen::Quaternionf {msg->pose.orientation.w, msg->pose.orientation.x, msg->pose.orientation.y, msg->pose.orientation.z};
+    local_position_measurement.attitude_quaternion = Eigen::Quaternionf {msg->pose.orientation.w, msg->pose.orientation.x, -msg->pose.orientation.y, -msg->pose.orientation.z};
     local_position_measurement.attitude_variance = Eigen::Vector3f {0.1, 0.1, 0.1};
 
     try {
