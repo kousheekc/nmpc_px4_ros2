@@ -2,6 +2,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
+    # TODO: Set LD_LIBRARY_PATH env var with paths to acados lib and model lib until its possible to do it directly
     return LaunchDescription([
         Node(
             package='nmpc_px4_ros2_utils',
@@ -18,4 +19,5 @@ def generate_launch_description():
             executable='nmpc_flight_mode',
             name='nmpc_flight_mode'
         )
+        # TODO: launch rviz
     ])

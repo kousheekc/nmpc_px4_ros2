@@ -10,11 +10,15 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+set(BUILD_SHARED_LIBS ON)
 
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(px4_ros2_cpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(px4_msgs REQUIRED)
 find_package(nmpc_px4_ros2_interfaces REQUIRED)
@@ -24,12 +28,20 @@ include_directories(
   ${Eigen3_INCLUDE_DIRS}
 )
 
-add_library(utils_lib STATIC src/utils.cpp)
+add_library(nmpc_px4_ros2_utils src/utils.cpp)
 
 add_executable(odom_repub_node src/odometry_republisher_node.cpp)
 add_executable(ref_traj_pub_node src/reference_trajectory_node.cpp)
+add_executable(ext_state_est_node src/external_state_estimation_node.cpp)
 
-ament_export_targets(utils_lib HAS_LIBRARY_TARGET)
+ament_target_dependencies(nmpc_px4_ros2_utils 
+  Eigen3 
+)
+
+ament_export_targets(nmpc_px4_ros2_utils HAS_LIBRARY_TARGET)
+ament_export_dependencies(
+  Eigen3
+)
 
 ament_target_dependencies(odom_repub_node 
   Eigen3 
@@ -46,31 +58,39 @@ ament_target_dependencies(ref_traj_pub_node
   nmpc_px4_ros2_interfaces
 )
 
-target_link_libraries(odom_repub_node utils_lib)
+ament_target_dependencies(ext_state_est_node 
+  Eigen3 
+  rclcpp
+  geometry_msgs
+  px4_ros2_cpp 
+)
+
+target_link_libraries(odom_repub_node nmpc_px4_ros2_utils)
+
+install(DIRECTORY include/nmpc_px4_ros2_utils
+  DESTINATION include
+)
 
 install(
-  TARGETS utils_lib
-  EXPORT utils_lib
+  TARGETS nmpc_px4_ros2_utils
+  EXPORT nmpc_px4_ros2_utils
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
   INCLUDES DESTINATION include
 )
 
-install(DIRECTORY include/
-  DESTINATION include
+install(TARGETS 
+  odom_repub_node
+  ref_traj_pub_node
+  ext_state_est_node
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 install(DIRECTORY 
   config
   DESTINATION share/${PROJECT_NAME}
-)
-      
-install(TARGETS 
-  odom_repub_node
-  ref_traj_pub_node
-  DESTINATION lib/${PROJECT_NAME}
-)
+)   
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

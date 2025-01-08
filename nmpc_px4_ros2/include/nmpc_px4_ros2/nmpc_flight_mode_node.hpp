@@ -7,8 +7,10 @@
 #include <px4_ros2/odometry/attitude.hpp>
 
 #include <Eigen/Eigen>
+#include <algorithm>
 #include <vector>
 #include <string>
+#include <cmath>
 
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
@@ -37,8 +39,9 @@ public:
   explicit NMPCFlightMode(rclcpp::Node & node)
   : ModeBase(node, kName), _node(node)
   {
+    // TODO: Define ros2 params for mass, gravity, thrust weight ratio, thrust coefficient etc
     _optimal_traj_pub = _node.create_publisher<nav_msgs::msg::Path>("optimal_traj", 10);
-    _ref_traj_sub = node.create_subscription<nmpc_px4_ros2_interfaces::msg::StateTrajectory>("/ref_traj", 10, std::bind(&NMPCFlightMode::_refTrajCallback, this, std::placeholders::_1));
+    _ref_traj_sub = node.create_subscription<nmpc_px4_ros2_interfaces::msg::StateTrajectory>("ref_traj", 10, std::bind(&NMPCFlightMode::_refTrajCallback, this, std::placeholders::_1));
 
     _thrust_setpoint = std::make_shared<px4_ros2::DirectActuatorsSetpointType>(*this);
     _vehicle_local_position_velocity = std::make_shared<px4_ros2::OdometryLocalPosition>(*this);
@@ -106,12 +109,12 @@ public:
 
       for (int j = 0; j < N; j++)
       {
-        double ref_state[17];
-        std::copy_n(ref_traj[iter+j].begin(), 17, ref_state);
+        double ref_state[NY];
+        std::copy_n(ref_traj[iter+j].begin(), NY, ref_state);
         ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, j, "yref", ref_state);
       }
-      double ref_state_e[17];
-      std::copy_n(ref_traj[iter+N].begin(), 13, ref_state_e);
+      double ref_state_e[NX];
+      std::copy_n(ref_traj[iter+N].begin(), NX, ref_state_e);
 			ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "yref", ref_state_e);
 
       double xtraj[NX * (N+1)];
@@ -143,8 +146,8 @@ public:
       // RCLCPP_INFO(_node.get_logger(), "Iter %d, thrust setpoint: %f, %f, %f, %f", iter, sqrt(utraj[4*set+1]/8.580775e-06)/1000, sqrt(utraj[4*set+3]/8.580775e-06)/1000, sqrt(utraj[4*set+2]/8.580775e-06)/1000, sqrt(utraj[4*set+0]/8.580775e-06)/1000);
       // RCLCPP_INFO(_node.get_logger(), "Iter %d, prev u: %f, %f, %f, %f", iter, prev_u[0], prev_u[2], prev_u[3], prev_u[1]);
       
-      std::copy(utraj + set * 4, utraj + set * 4 + 4, prev_u);
-      setpoint << sqrt(utraj[4*set+1]/8.580775e-06)/1000, sqrt(utraj[4*set+3]/8.580775e-06)/1000, sqrt(utraj[4*set+2]/8.580775e-06)/1000, sqrt(utraj[4*set+0]/8.580775e-06)/1000, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
+      std::copy_n(utraj + set * NU, NU, prev_u);
+      setpoint << sqrt(utraj[NU*set+1]/8.580775e-06)/1000, sqrt(utraj[NU*set+3]/8.580775e-06)/1000, sqrt(utraj[NU*set+2]/8.580775e-06)/1000, sqrt(utraj[NU*set+0]/8.580775e-06)/1000, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
       // setpoint << 0.0, 0.0, 1.0, 0.0, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
       _thrust_setpoint->updateMotors(setpoint);
       iter++;
@@ -177,7 +180,6 @@ private:
 private:
   void _refTrajCallback(const nmpc_px4_ros2_interfaces::msg::StateTrajectory & msg)
   {
-    RCLCPP_INFO(_node.get_logger(), "Reference trajectory received");
     ref_traj_len = msg.len.data;
     for (int i = 0; i < ref_traj_len; i++)
     {
