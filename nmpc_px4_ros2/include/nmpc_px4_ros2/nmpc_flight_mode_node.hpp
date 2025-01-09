@@ -67,91 +67,107 @@ public:
   {
     iter = 0;
     std::fill(std::begin(prev_u), std::end(prev_u), 4.9033);
+    current_state = State::TRACK;
+    holding = false;
   }
 
   void onDeactivate() override {}
 
   void updateSetpoint(float dt_s) override
   {
-    // TODO: Implement state machine for various options: 1. Approach trajectory if too far but near enough, track trajectory, hold last position
-    // TODO: Throw error if starting point of trajectory too far away from current position
-    if(iter < ref_traj_len-N)
-    {
-      Eigen::Vector3f pos_ned = _vehicle_local_position_velocity->positionNed();
-      Eigen::Quaternionf quat_ned = _vehicle_attitude->attitude();
-      Eigen::Vector3f lin_vel_ned = _vehicle_local_position_velocity->velocityNed();
-      Eigen::Vector3f ang_vel_frd = _vehicle_angular_velocity->angularVelocityFrd();
+    Eigen::Vector3f pos_ned = _vehicle_local_position_velocity->positionNed();
+    Eigen::Quaternionf quat_ned = _vehicle_attitude->attitude();
+    Eigen::Vector3f lin_vel_ned = _vehicle_local_position_velocity->velocityNed();
+    Eigen::Vector3f ang_vel_frd = _vehicle_angular_velocity->angularVelocityFrd();
 
-      Eigen::Vector3f pos_enu = utils::ned2enuPosition(pos_ned);
-      Eigen::Quaternionf quat_enu = utils::nedfrd2enufluRotation(quat_ned);
-      Eigen::Vector3f lin_vel_enu = utils::ned2enuPosition(lin_vel_ned);
-      Eigen::Vector3f ang_vel_flu = utils::frd2fluAngVel(ang_vel_frd);
+    Eigen::Vector3f pos_enu = utils::ned2enuPosition(pos_ned);
+    Eigen::Quaternionf quat_enu = utils::nedfrd2enufluRotation(quat_ned);
+    Eigen::Vector3f lin_vel_enu = utils::ned2enuPosition(lin_vel_ned);
+    Eigen::Vector3f ang_vel_flu = utils::frd2fluAngVel(ang_vel_frd);
 
-      double x_init[NX];
-      x_init[0] = pos_enu(0);
-      x_init[1] = pos_enu(1);
-      x_init[2] = pos_enu(2);
-      x_init[3] = quat_enu.w();
-      x_init[4] = quat_enu.x();
-      x_init[5] = quat_enu.y();
-      x_init[6] = quat_enu.z();
-      x_init[7] = lin_vel_enu(0);
-      x_init[8] = lin_vel_enu(1);
-      x_init[9] = lin_vel_enu(2);
-      x_init[10] = ang_vel_flu(0);
-      x_init[11] = ang_vel_flu(1);
-      x_init[12] = ang_vel_flu(2);
+    _initOCP(pos_enu, quat_enu, lin_vel_enu, ang_vel_flu);
 
-      ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", x_init);
-      ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubx", x_init);
-      ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbu", prev_u);
-      ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubu", prev_u);
+    switch (current_state) {
+      case State::TRACK:
+        if (iter == 0)
+        {
+          float distance = utils::distance(pos_enu, Eigen::Vector3f {ref_traj[0][0], ref_traj[0][1], ref_traj[0][2]});
+          if (distance > 1.0)
+          {
+            RCLCPP_ERROR(_node.get_logger(), "Starting point of trajectory too far away from current position. Holding current position.");
+            current_state = State::HOLD;
+          }
+        }
+        if(iter < ref_traj_len-N)
+        {
+          for (int j = 0; j < N; j++)
+          {
+            double ref_state[NY];
+            std::copy_n(ref_traj[iter+j].begin(), NY, ref_state);
+            ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, j, "yref", ref_state);
+          }
+          double ref_state_e[NX];
+          std::copy_n(ref_traj[iter+N].begin(), NX, ref_state_e);
+          ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "yref", ref_state_e);
+          iter++;
+        }
+        else
+        {
+          RCLCPP_WARN(_node.get_logger(), "Finished trajectory tracking. Switching to hold mode.");
+          current_state = State::HOLD;
+        }
+        break;
+      case State::HOLD:
+        static double hold_state[NY];
+        static double hold_state_e[NX];
 
-      for (int j = 0; j < N; j++)
-      {
-        double ref_state[NY];
-        std::copy_n(ref_traj[iter+j].begin(), NY, ref_state);
-        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, j, "yref", ref_state);
-      }
-      double ref_state_e[NX];
-      std::copy_n(ref_traj[iter+N].begin(), NX, ref_state_e);
-			ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "yref", ref_state_e);
+        if (holding == false)
+        {
+          // TODO: Cleanup this thingy
+          hold_state[0] = pos_enu(0);
+          hold_state[1] = pos_enu(1);
+          hold_state[2] = pos_enu(2);
+          hold_state[3] = 1.0;
+          hold_state[4] = 0.0;
+          hold_state[5] = 0.0;
+          hold_state[6] = 0.0;
+          hold_state[7] = 0.0;
+          hold_state[8] = 0.0;
+          hold_state[9] = 0.0;
+          hold_state[10] = 0.0;
+          hold_state[11] = 0.0;
+          hold_state[12] = 0.0;
+          hold_state[13] = 4.9033;
+          hold_state[14] = 4.9033;
+          hold_state[15] = 4.9033;
+          hold_state[16] = 4.9033;
 
-      double xtraj[NX * (N+1)];
-      double utraj[NU * N];
-      status = nmpc_flight_mode_acados_solve(acados_ocp_capsule);
-      for (int ii = 0; ii <= N; ii++)
-        ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "x", &xtraj[ii*NX]);
-      for (int ii = 0; ii < N; ii++)
-        ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "u", &utraj[ii*NU]);
-      
-      auto optimal_path_msg = nav_msgs::msg::Path();
-      optimal_path_msg.header.frame_id = "world";
-      optimal_path_msg.header.stamp = _node.get_clock()->now();
-      for (int ii = 0; ii <= N; ii++)
-      {
-        auto pose = geometry_msgs::msg::PoseStamped();
-        pose.header.frame_id = "world";
-        pose.header.stamp = _node.get_clock()->now();
-        pose.pose.position.x = xtraj[ii*NX+0];
-        pose.pose.position.y = xtraj[ii*NX+1];
-        pose.pose.position.z = xtraj[ii*NX+2];
-        optimal_path_msg.poses.push_back(pose);
-      }
-      _optimal_traj_pub->publish(optimal_path_msg);
+          hold_state_e[0] = pos_enu(0);
+          hold_state_e[1] = pos_enu(1);
+          hold_state_e[2] = pos_enu(2);
+          hold_state_e[3] = 1.0;
+          hold_state_e[4] = 0.0;
+          hold_state_e[5] = 0.0;
+          hold_state_e[6] = 0.0;
+          hold_state_e[7] = 0.0;
+          hold_state_e[8] = 0.0;
+          hold_state_e[9] = 0.0;
+          hold_state_e[10] = 0.0;
+          hold_state_e[11] = 0.0;
+          hold_state_e[12] = 0.0;
 
-
-      Eigen::Matrix<float, 12, 1> setpoint;
-      int set = 1;
-      // RCLCPP_INFO(_node.get_logger(), "Iter %d, thrust setpoint: %f, %f, %f, %f", iter, sqrt(utraj[4*set+1]/8.580775e-06)/1000, sqrt(utraj[4*set+3]/8.580775e-06)/1000, sqrt(utraj[4*set+2]/8.580775e-06)/1000, sqrt(utraj[4*set+0]/8.580775e-06)/1000);
-      // RCLCPP_INFO(_node.get_logger(), "Iter %d, prev u: %f, %f, %f, %f", iter, prev_u[0], prev_u[2], prev_u[3], prev_u[1]);
-      
-      std::copy_n(utraj + set * NU, NU, prev_u);
-      setpoint << sqrt(utraj[NU*set+1]/8.580775e-06)/1000, sqrt(utraj[NU*set+3]/8.580775e-06)/1000, sqrt(utraj[NU*set+2]/8.580775e-06)/1000, sqrt(utraj[NU*set+0]/8.580775e-06)/1000, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
-      // setpoint << 0.0, 0.0, 1.0, 0.0, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
-      _thrust_setpoint->updateMotors(setpoint);
-      iter++;
+          holding = true;
+        }
+        for (int j = 0; j < N; j++)
+        {
+          ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, j, "yref", hold_state);
+        }
+        ocp_nlp_cost_model_set(nlp_config, nlp_dims, nlp_in, N, "yref", hold_state_e);
+        break;
     }
+
+    _solveOCP();
+    _setThrust();
   }
 
 private:
@@ -174,8 +190,19 @@ private:
   int status;
   int iter;
   double prev_u[NU];
+  double xtraj[NX * (N+1)];
+  double utraj[NU * N];
   int ref_traj_len;
   std::vector<std::vector<double>> ref_traj;
+  bool holding = false;
+
+  enum class State
+  {
+    TRACK,
+    HOLD,
+  };
+
+  State current_state;
 
 private:
   void _refTrajCallback(const nmpc_px4_ros2_interfaces::msg::StateTrajectory & msg)
@@ -208,5 +235,65 @@ private:
   float _thrust2rpm(float thrust) const
   {
     return sqrt(thrust/8.580775e-06)/1000;
+  }
+
+  void _initOCP(Eigen::Vector3f pos_enu, Eigen::Quaternionf quat_enu, Eigen::Vector3f lin_vel_enu, Eigen::Vector3f ang_vel_flu)
+  {
+    double x_init[NX];
+    x_init[0] = pos_enu(0);
+    x_init[1] = pos_enu(1);
+    x_init[2] = pos_enu(2);
+    x_init[3] = quat_enu.w();
+    x_init[4] = quat_enu.x();
+    x_init[5] = quat_enu.y();
+    x_init[6] = quat_enu.z();
+    x_init[7] = lin_vel_enu(0);
+    x_init[8] = lin_vel_enu(1);
+    x_init[9] = lin_vel_enu(2);
+    x_init[10] = ang_vel_flu(0);
+    x_init[11] = ang_vel_flu(1);
+    x_init[12] = ang_vel_flu(2);
+
+    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbx", x_init);
+    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubx", x_init);
+    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "lbu", prev_u);
+    ocp_nlp_constraints_model_set(nlp_config, nlp_dims, nlp_in, 0, "ubu", prev_u);
+  }
+
+  float _solveOCP()
+  {
+    status = nmpc_flight_mode_acados_solve(acados_ocp_capsule);
+    for (int ii = 0; ii <= N; ii++)
+      ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "x", &xtraj[ii*NX]);
+    for (int ii = 0; ii < N; ii++)
+      ocp_nlp_out_get(nlp_config, nlp_dims, nlp_out, ii, "u", &utraj[ii*NU]);
+    
+    auto optimal_path_msg = nav_msgs::msg::Path();
+    optimal_path_msg.header.frame_id = "world";
+    optimal_path_msg.header.stamp = _node.get_clock()->now();
+    for (int ii = 0; ii <= N; ii++)
+    {
+      auto pose = geometry_msgs::msg::PoseStamped();
+      pose.header.frame_id = "world";
+      pose.header.stamp = _node.get_clock()->now();
+      pose.pose.position.x = xtraj[ii*NX+0];
+      pose.pose.position.y = xtraj[ii*NX+1];
+      pose.pose.position.z = xtraj[ii*NX+2];
+      optimal_path_msg.poses.push_back(pose);
+    }
+    _optimal_traj_pub->publish(optimal_path_msg);
+  }
+
+  void _setThrust()
+  {
+    Eigen::Matrix<float, 12, 1> setpoint;
+    int set = 1;
+    // RCLCPP_INFO(_node.get_logger(), "Iter %d, thrust setpoint: %f, %f, %f, %f", iter, sqrt(utraj[4*set+1]/8.580775e-06)/1000, sqrt(utraj[4*set+3]/8.580775e-06)/1000, sqrt(utraj[4*set+2]/8.580775e-06)/1000, sqrt(utraj[4*set+0]/8.580775e-06)/1000);
+    // RCLCPP_INFO(_node.get_logger(), "Iter %d, prev u: %f, %f, %f, %f", iter, prev_u[0], prev_u[2], prev_u[3], prev_u[1]);
+    
+    std::copy_n(utraj + set * NU, NU, prev_u);
+    setpoint << sqrt(utraj[NU*set+1]/8.580775e-06)/1000, sqrt(utraj[NU*set+3]/8.580775e-06)/1000, sqrt(utraj[NU*set+2]/8.580775e-06)/1000, sqrt(utraj[NU*set+0]/8.580775e-06)/1000, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
+    // setpoint << 0.0, 0.0, 1.0, 0.0, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
+    _thrust_setpoint->updateMotors(setpoint);
   }
 };

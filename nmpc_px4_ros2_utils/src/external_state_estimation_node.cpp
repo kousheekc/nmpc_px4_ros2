@@ -9,11 +9,11 @@ class ExternalStateEstimationInterface : public px4_ros2::LocalPositionMeasureme
 public:
   explicit ExternalStateEstimationInterface(rclcpp::Node & node)
   : LocalPositionMeasurementInterface(node, px4_ros2::PoseFrame::LocalNED,
-      px4_ros2::VelocityFrame::LocalNED)
+      px4_ros2::VelocityFrame::Unknown)
   {
     _node.declare_parameter("state_estimation_topic", "/Robot_1/pose");
-    _pose_sub = _node.create_subscription<geometry_msgs::msg::PoseStamped>(node.get_parameter("state_estimation_topic").as_string(), 10, std::bind(&ExternalStateEstimationInterface::_poseCallback, this, std::placeholders::_1));
 
+    _pose_sub = _node.create_subscription<geometry_msgs::msg::PoseStamped>(node.get_parameter("state_estimation_topic").as_string(), 10, std::bind(&ExternalStateEstimationInterface::_poseCallback, this, std::placeholders::_1));
 
     RCLCPP_INFO(_node.get_logger(), "External state estimation node running");
   }
@@ -44,9 +44,6 @@ public:
 
 private:
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr _pose_sub;
-
-private:
-
 };
 
 class ExternalStateEstimationNode : public rclcpp::Node

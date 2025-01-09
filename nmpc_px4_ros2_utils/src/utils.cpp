@@ -28,4 +28,8 @@ namespace utils
         Eigen::Quaternionf quat_enu_flu = ned2enuRotation(quat_ned_flu);
         return quat_enu_flu;
     }
+    float distance(const Eigen::Vector3f& pos1, const Eigen::Vector3f& pos2)
+    {
+        return (pos1 - pos2).norm();
+    }
 }

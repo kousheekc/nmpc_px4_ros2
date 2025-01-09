@@ -10,4 +10,5 @@ namespace utils
     Eigen::Quaternionf ned2enuRotation(const Eigen::Quaternionf& quat_ned);
     Eigen::Vector3f ned2enuPosition(const Eigen::Vector3f& pos_ned);
     Eigen::Quaternionf nedfrd2enufluRotation(const Eigen::Quaternionf& quat_ned);
+    float distance(const Eigen::Vector3f& pos1, const Eigen::Vector3f& pos2);
 }
