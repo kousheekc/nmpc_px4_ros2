@@ -55,7 +55,7 @@ To install this package follow the instructions below:
 1. Make a new ros2 workspace or navigate to your existing workspace
 ```bash
 mkdir -p ~/nmpc_px4_ros2_ws/src
-cd nmpc_px4_ros2_ws/src
+cd ~/nmpc_px4_ros2_ws/src
 ```
 2. Clone package and submodules
 > **⚠ WARNING**
@@ -89,6 +89,40 @@ export ACADOS_SOURCE_DIR="~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados"
 ```
 
 ## Usage
+To use this package follow the instructions below
+
+1. (Optional) Define system dynamics, constraints, solver options and generate C code.
+> **⚠ Note**
+> 
+> This step is optional since the model/solver are already defined for a standard X500 frame drone. This step needs to be one if you change the system parameters or you want to use a different model or different solver options.
+```bash
+cd ~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/nmpc_px4_ros2/scripts
+python3 nmpc_flight_mode.py
+```
+
+2. Build ROS2 packages
+```bash
+cd ~/nmpc_px4_ros2_ws
+colcon build
+```
+
+3. Launch PX4 Simulation
+```bash
+cd <PX4-Autopilot source directory>
+make px4_sitl_default gz_x500
+```
+On a different terminal
+```bash
+MicroXRCEAgent udp4 -p 8888
+```
+
+4. Launch NMPC Flight Mode
+```bash
+source install/setup.bash
+ros2 launch nmpc_px4_ros2_bringup bringup.launch.py
+```
+
+5. Open QGroundControl Daily Build - Arm the drone, takeoff, select **NMPC Flight Mode** from the list of available flight modes
 
 ## License
 This project is licensed under the BSD 3-Clause License - see the [LICENSE](https://github.com/kousheekc/nmpc_px4_ros2/blob/main/LICENSE) file for details.
