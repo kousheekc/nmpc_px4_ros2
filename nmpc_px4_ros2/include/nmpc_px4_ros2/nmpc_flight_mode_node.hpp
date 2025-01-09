@@ -40,6 +40,14 @@ public:
   : ModeBase(node, kName), _node(node)
   {
     // TODO: Define ros2 params for mass, gravity, thrust weight ratio, thrust coefficient etc
+    _node.declare_parameter("mass", 2.0);
+    _node.declare_parameter("gravity", 9.8066);
+    _node.declare_parameter("thrust_weight_ratio", 1.75);
+    _node.declare_parameter("thrust_coefficient", 8.580775e-06);
+    _node.declare_parameter("max_omega", 1000);
+
+    uhov = _node.get_parameter("mass").as_double() * _node.get_parameter("gravity").as_double() / NU;
+
     _optimal_traj_pub = _node.create_publisher<nav_msgs::msg::Path>("optimal_traj", 10);
     _ref_traj_sub = node.create_subscription<nmpc_px4_ros2_interfaces::msg::StateTrajectory>("ref_traj", 10, std::bind(&NMPCFlightMode::_refTrajCallback, this, std::placeholders::_1));
 
@@ -66,7 +74,7 @@ public:
   void onActivate() override 
   {
     iter = 0;
-    std::fill(std::begin(prev_u), std::end(prev_u), 4.9033);
+    std::fill(std::begin(prev_u), std::end(prev_u), uhov);
     current_state = State::TRACK;
     holding = false;
   }
@@ -96,6 +104,7 @@ public:
           {
             RCLCPP_ERROR(_node.get_logger(), "Starting point of trajectory too far away from current position. Holding current position.");
             current_state = State::HOLD;
+            break;
           }
         }
         if(iter < ref_traj_len-N)
@@ -137,10 +146,10 @@ public:
           hold_state[10] = 0.0;
           hold_state[11] = 0.0;
           hold_state[12] = 0.0;
-          hold_state[13] = 4.9033;
-          hold_state[14] = 4.9033;
-          hold_state[15] = 4.9033;
-          hold_state[16] = 4.9033;
+          hold_state[13] = uhov;
+          hold_state[14] = uhov;
+          hold_state[15] = uhov;
+          hold_state[16] = uhov;
 
           hold_state_e[0] = pos_enu(0);
           hold_state_e[1] = pos_enu(1);
@@ -188,6 +197,7 @@ private:
   ocp_nlp_config *nlp_config;
   nmpc_flight_mode_solver_capsule *acados_ocp_capsule;
   int status;
+
   int iter;
   double prev_u[NU];
   double xtraj[NX * (N+1)];
@@ -195,6 +205,8 @@ private:
   int ref_traj_len;
   std::vector<std::vector<double>> ref_traj;
   bool holding = false;
+
+  double uhov;
 
   enum class State
   {
@@ -232,9 +244,9 @@ private:
     }
   }
 
-  float _thrust2rpm(float thrust) const
+  float _thrust2omega(float thrust) const
   {
-    return sqrt(thrust/8.580775e-06)/1000;
+    return sqrt(thrust/_node.get_parameter("thrust_coefficient").as_double())/_node.get_parameter("max_omega").as_double();
   }
 
   void _initOCP(Eigen::Vector3f pos_enu, Eigen::Quaternionf quat_enu, Eigen::Vector3f lin_vel_enu, Eigen::Vector3f ang_vel_flu)
@@ -292,7 +304,7 @@ private:
     // RCLCPP_INFO(_node.get_logger(), "Iter %d, prev u: %f, %f, %f, %f", iter, prev_u[0], prev_u[2], prev_u[3], prev_u[1]);
     
     std::copy_n(utraj + set * NU, NU, prev_u);
-    setpoint << sqrt(utraj[NU*set+1]/8.580775e-06)/1000, sqrt(utraj[NU*set+3]/8.580775e-06)/1000, sqrt(utraj[NU*set+2]/8.580775e-06)/1000, sqrt(utraj[NU*set+0]/8.580775e-06)/1000, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
+    setpoint << _thrust2omega(utraj[NU*set+1]), _thrust2omega(utraj[NU*set+3]), _thrust2omega(utraj[NU*set+2]), _thrust2omega(utraj[NU*set+0]), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
     // setpoint << 0.0, 0.0, 1.0, 0.0, std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1"), std::nanf("1");
     _thrust_setpoint->updateMotors(setpoint);
   }
