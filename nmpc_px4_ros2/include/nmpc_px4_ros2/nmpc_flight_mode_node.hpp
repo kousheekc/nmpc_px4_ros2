@@ -44,7 +44,7 @@ public:
     _node.declare_parameter("gravity", 9.8066);
     _node.declare_parameter("thrust_weight_ratio", 1.75);
     _node.declare_parameter("thrust_coefficient", 8.580775e-06);
-    _node.declare_parameter("max_omega", 1000);
+    _node.declare_parameter("max_omega", 1000.0);
 
     uhov = _node.get_parameter("mass").as_double() * _node.get_parameter("gravity").as_double() / NU;
 

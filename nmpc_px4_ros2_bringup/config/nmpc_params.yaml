@@ -1,0 +1,7 @@
+/**:
+  ros__parameters:
+    mass: 2.0
+    gravity: 9.8066
+    thrust_weight_ratio: 1.75
+    thrust_coefficient: 8.580775e-06
+    max_omega: 1000.0
