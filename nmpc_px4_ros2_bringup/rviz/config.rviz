@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /Path2
         - /Odometry1
       Splitter Ratio: 0.5
     Tree Height: 746
@@ -102,7 +103,7 @@ Visualization Manager:
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /ref_traj
+        Value: /ref_traj_viz
       Value: true
     - Angle Tolerance: 0.10000000149011612
       Class: rviz_default_plugins/Odometry
@@ -148,19 +149,13 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
-        test:
-          Value: true
-        world:
-          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: false
       Tree:
-        world:
-          test:
-            {}
+        {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -209,7 +204,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 9.280861854553223
+      Distance: 36.356327056884766
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
