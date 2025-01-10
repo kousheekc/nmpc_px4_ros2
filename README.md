@@ -48,10 +48,37 @@ This package has been tested with ROS2 Humble on Ubuntu 22.04. Ensure your syste
 3. **ROS2 PX4 Setup:** [https://docs.px4.io/main/en/ros2/user_guide.html](https://docs.px4.io/main/en/ros2/user_guide.html)
 4. **ACADOS:** (*Note:* Installation instructions for ACADOS are provided below.
 5. **QGroundControl Daily Build:** [https://docs.qgroundcontrol.com/master/en/qgc-dev-guide/getting_started/index.html](https://docs.qgroundcontrol.com/master/en/qgc-dev-guide/getting_started/index.html)
+6. **Docker (Optiona):** [https://docs.docker.com/engine/install/ubuntu/](https://docs.docker.com/engine/install/ubuntu/)
 
 ## Install
-To install this package follow the instructions below:
+To install this package you can follow two approaches, either through docker or directly on your system:
 
+### Docker Approach
+1. Clone package and the direct submodules
+```bash
+git clone https://github.com/kousheekc/nmpc_px4_ros2.git
+cd nmpc_px4_ros2
+git submodule update --init --depth 1
+```
+2. Build docker image
+```bash
+docker build -t nmpc_px4_ros2 .
+```
+3. Launch a container
+```bash
+xhost +local:docker
+docker run -it --rm \                               
+    -v $(pwd):/workspace/nmpc_px4_ros2_ws/src \
+    -e DISPLAY=$DISPLAY \
+    -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+    --env="QT_X11_NO_MITSHM=1" \
+    --privileged \
+    --network=host \
+    --name=nmpc_px4_ros2 \
+    nmpc_px4_ros2
+```
+
+### Direct Approach
 1. Make a new ros2 workspace or navigate to your existing workspace
 ```bash
 mkdir -p ~/nmpc_px4_ros2_ws/src
@@ -60,13 +87,13 @@ cd ~/nmpc_px4_ros2_ws/src
 2. Clone package and submodules
 > **⚠ WARNING**
 > 
-> The following commands will clone the submodules as well. If your workspace already contains the *px4_msgs* package or the *px4-ros2-interface-lib* this will cause conflicts. This will also clone ACADOS. Modify the [.gitmodules](https://github.com/kousheekc/nmpc_px4_ros2/blob/main/.gitmodules) file, to exclude packages you may already have.
+> The following commands will clone the submodules as well. If your workspace already contains the *px4_msgs* package or the *px4-ros2-interface-lib* this will cause conflicts. This will also clone ACADOS, PX4-Autopilot and Micro-XRCE-DDS-Agent. Modify the [.gitmodules](https://github.com/kousheekc/nmpc_px4_ros2/blob/main/.gitmodules) file, to exclude packages you may already have.
 ```bash
 git clone https://github.com/kousheekc/nmpc_px4_ros2.git
 cd nmpc_px4_ros2
-git submodule update --init --recursive
+git submodule update --init --depth 1
 ```
-3. Install ACADOS
+3. Install ACADOS and ACADOS python interface
 ```bash
 cd 3rd_party/acados
 git submodule update --init --recursive
@@ -74,18 +101,17 @@ mkdir -p build
 cd build
 cmake -DACADOS_WITH_QPOASES=ON ..
 make install -j4
-```
-4. Install ACADOS Python Interface
-```bash
 cd ..
 virtualenv env --python=/usr/bin/python3
 source env/bin/activate
 pip install -e interfaces/acados_template
 ```
-5. Update LD_LIBRARY_PATH (replace the paths if you have installed acados elsewhere)
+
+4. Update environment variables in your .bashrc (replace the paths if you have installed acados elsewhere)
 ```bash
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados/lib"
-export ACADOS_SOURCE_DIR="~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados"
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados/lib"' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/nmpc_px4_ros2/scripts/c_generated_code"' >> ~/.bashrc
+echo 'export ACADOS_SOURCE_DIR="~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados"' >> ~/.bashrc
 ```
 
 ## Usage
