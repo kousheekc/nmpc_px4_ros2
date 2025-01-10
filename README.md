@@ -107,11 +107,11 @@ source env/bin/activate
 pip install -e interfaces/acados_template
 ```
 
-4. Update environment variables in your .bashrc (replace the paths if you have installed acados elsewhere)
+4. Update environment variables in your .bashrc (replace the paths if you have installed acados elsewhere and replace <use> with your username)
 ```bash
-echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados/lib"' >> ~/.bashrc
-echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/nmpc_px4_ros2/scripts/c_generated_code"' >> ~/.bashrc
-echo 'export ACADOS_SOURCE_DIR="~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados"' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"/home/<user>/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados/lib"' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"/home/<user>/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/nmpc_px4_ros2/scripts/c_generated_code"' >> ~/.bashrc
+echo 'export ACADOS_SOURCE_DIR="/home/<user>/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados"' >> ~/.bashrc
 ```
 
 ## Usage
