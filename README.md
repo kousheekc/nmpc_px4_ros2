@@ -3,7 +3,7 @@
 
 ![Status](https://img.shields.io/badge/Status-Experimental-orange)
 [![ROS 2 Compatible](https://img.shields.io/badge/ROS%202-Humble-blue)](https://docs.ros.org/en/humble/index.html)
-[![PX4 Compatible](https://img.shields.io/badge/PX4-Main-pink)](https://github.com/PX4/PX4-Autopilot)
+[![PX4 Compatible](https://img.shields.io/badge/PX4-Autopilot-pink)](https://github.com/PX4/PX4-Autopilot)
 [![Solver: ACADOS](https://img.shields.io/badge/Solver-ACADOS-brightgreen)](https://github.com/acados/acados)
 
 This ROS2 package implements a nonlinear model predictive control (NMPC) pipeline for trajectory tracking of aerial vehicles running PX4 Autopilot. It uses ACADOS to define and solve the optimal control problem (OCP).
