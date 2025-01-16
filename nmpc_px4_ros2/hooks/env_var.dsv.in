@@ -1,0 +1,2 @@
+prepend-non-duplicate;LD_LIBRARY_PATH;share/@PROJECT_NAME@/scripts/c_generated_code
+prepend-non-duplicate;LD_LIBRARY_PATH;share/@PROJECT_NAME@/lib

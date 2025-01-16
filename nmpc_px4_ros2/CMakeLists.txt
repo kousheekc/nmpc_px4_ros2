@@ -24,14 +24,14 @@ find_package(px4_msgs REQUIRED)
 find_package(nmpc_px4_ros2_interfaces REQUIRED)
 find_package(nmpc_px4_ros2_utils REQUIRED)
 
-set(ACADOS_SOURCE_DIR $ENV{ACADOS_SOURCE_DIR})
+# set(ACADOS_SOURCE_DIR $ENV{ACADOS_SOURCE_DIR})
 
-if(NOT DEFINED ACADOS_SOURCE_DIR)
-  message(FATAL_ERROR "The environment variable ACADOS_SOURCE_DIR is not set. Please set it to the path of the ACADOS source directory.")
-endif()
+# if(NOT DEFINED ACADOS_SOURCE_DIR)
+#   message(FATAL_ERROR "The environment variable ACADOS_SOURCE_DIR is not set. Please set it to the path of the ACADOS source directory.")
+# endif()
 
-set(acados_include "${ACADOS_SOURCE_DIR}/include")
-set(acados_lib "${ACADOS_SOURCE_DIR}/lib")
+set(acados_include "${CMAKE_SOURCE_DIR}/../3rd_party/acados/include")
+set(acados_lib "${CMAKE_SOURCE_DIR}/../3rd_party/acados/lib")
 set(full_model_build "${PROJECT_SOURCE_DIR}/scripts/c_generated_code")
 
 include_directories(
@@ -72,9 +72,18 @@ install(TARGETS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(
+  DIRECTORY 
+  scripts
+  ../3rd_party/acados/lib
+  DESTINATION share/${PROJECT_NAME}
+)
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+ament_environment_hooks("${CMAKE_CURRENT_SOURCE_DIR}/hooks/env_var.dsv.in")
 
 ament_package()
