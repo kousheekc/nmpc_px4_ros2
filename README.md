@@ -3,20 +3,18 @@
 
 ![Status](https://img.shields.io/badge/Status-Experimental-orange)
 [![ROS 2 Compatible](https://img.shields.io/badge/ROS%202-Humble-blue)](https://docs.ros.org/en/humble/index.html)
-[![PX4 Compatible](https://img.shields.io/badge/PX4-Main-pink)](https://github.com/PX4/PX4-Autopilot)
+[![PX4 Compatible](https://img.shields.io/badge/PX4-Autopilot-pink)](https://github.com/PX4/PX4-Autopilot)
 [![Solver: ACADOS](https://img.shields.io/badge/Solver-ACADOS-brightgreen)](https://github.com/acados/acados)
 
 This ROS2 package implements a nonlinear model predictive control (NMPC) pipeline for trajectory tracking of aerial vehicles running PX4 Autopilot. It uses ACADOS to define and solve the optimal control problem (OCP).
 
-The control problem is set up in Python, where system dynamics and constraints are defined. ACADOS generates C code for the solver, which is used in a ROS2 C++ node to compute optimal control inputs based on the drone’s current state and reference trajectory.
-
-The package leverages the PX4 ROS2 Interface library developed by [Auterion](https://github.com/Auterion/px4-ros2-interface-lib), which simplifies communication with PX4 and eliminates the need to directly handle uORB topics. This abstraction allows for easier integration and provides better integration with PX4’s failsafe and arming checks.
-
-This package is designed for developers and researchers working on UAV control, offering a streamlined and powerful solution for integrating NMPC with PX4.
+The OCP is set up in Python and ACADOS generates C code for the solver, which is used in a ROS2 C++ node to compute optimal control inputs based on the drone’s current state and reference trajectory. The package uses the PX4 ROS2 Interface library developed by [Auterion](https://github.com/Auterion/px4-ros2-interface-lib), which simplifies communication with PX4 and eliminates the need to directly handle uORB topics. This abstraction allows for better integration with PX4’s failsafe checks.
 
 > **⚠ WARNING**
 > 
 > This package is experimental and intended for research and development purposes only. Users are advised to use this package at their own risk. Ensure thorough testing in a controlled environment before deploying on hardware.
+
+![Cover](media/nmpc_px4_ros2_clip.gif)
 
 ## Features
 1. **System Dynamics and Solver Setup**  
