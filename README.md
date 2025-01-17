@@ -10,8 +10,7 @@ This ROS2 package implements a nonlinear model predictive control (NMPC) pipelin
 
 The OCP is set up in Python and ACADOS generates C code for the solver, which is used in a ROS2 C++ node to compute optimal control inputs based on the drone’s current state and reference trajectory. The package uses the PX4 ROS2 Interface library developed by [Auterion](https://github.com/Auterion/px4-ros2-interface-lib), which simplifies communication with PX4 and eliminates the need to directly handle uORB topics. This abstraction allows for better integration with PX4’s failsafe checks.
 
-> **⚠ WARNING**
-> 
+> [!WARNING]
 > This package is experimental and intended for research and development purposes only. Users are advised to use this package at their own risk. Ensure thorough testing in a controlled environment before deploying on hardware.
 
 ![Cover](media/nmpc_px4_ros2_clip.gif)
@@ -83,8 +82,7 @@ mkdir -p ~/nmpc_px4_ros2_ws/src
 cd ~/nmpc_px4_ros2_ws/src
 ```
 2. Clone package and submodules
-> **⚠ WARNING**
-> 
+> [!WARNING]
 > The following commands will clone the submodules as well. If your workspace already contains the *px4_msgs* package or the *px4-ros2-interface-lib* this will cause conflicts. This will also clone ACADOS, PX4-Autopilot and Micro-XRCE-DDS-Agent. Modify the [.gitmodules](https://github.com/kousheekc/nmpc_px4_ros2/blob/main/.gitmodules) file, to exclude packages you may already have.
 ```bash
 git clone https://github.com/kousheekc/nmpc_px4_ros2.git
@@ -116,8 +114,7 @@ echo 'export ACADOS_SOURCE_DIR="/home/<user>/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/
 To use this package follow the instructions below
 
 1. (Optional) Define system dynamics, constraints, solver options and generate C code.
-> **⚠ Note**
-> 
+> [!NOTE]
 > This step is optional since the model/solver are already defined for a standard X500 frame drone. This step needs to be one if you change the system parameters or you want to use a different model or different solver options.
 ```bash
 cd ~/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/nmpc_px4_ros2/scripts
