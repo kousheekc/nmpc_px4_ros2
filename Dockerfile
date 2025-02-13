@@ -24,20 +24,17 @@ RUN git clone https://github.com/eProsima/Micro-XRCE-DDS-Agent.git && \
     sudo make install && \
     sudo ldconfig /usr/local/lib/
 
-# Clone and build ACADOS
-RUN git clone https://github.com/acados/acados.git --recursive && \
-    cd acados && mkdir build && cd build && \
+# Copy the package to the container
+COPY ./ /workspace/nmpc_px4_ros2_ws/src
+
+# Build ACADOS
+RUN cd /workspace/nmpc_px4_ros2_ws/src/3rd_party/acados && mkdir build && cd build && \
     cmake -DACADOS_WITH_QPOASES=ON .. && \
     make install -j4
 
 # Install ACADOS python interface
 RUN pip install virtualenv && \
     virtualenv env --python=/usr/bin/python3 && \
-    /bin/bash -c "source env/bin/activate && pip install -e /workspace/acados/interfaces/acados_template"
-
-# Set environment variables for ACADOS
-ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/workspace/acados/lib"
-ENV LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/workspace/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/scripts/c_generated_code"
-ENV ACADOS_SOURCE_DIR="/workspace/acados"
+    /bin/bash -c "source env/bin/activate && pip install -e /workspace/nmpc_px4_ros2_ws/src/3rd_party/acados/interfaces/acados_template"
 
 CMD ["/bin/bash"]
