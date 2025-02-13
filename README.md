@@ -41,11 +41,15 @@ The OCP is set up in Python and ACADOS generates C code for the solver, which is
 This package has been tested with ROS2 Humble on Ubuntu 22.04. Ensure your system meets the following requirements:  
   
 1. **ROS2 Humble:** [https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
-2. **PX4 Autopilot Source:** [https://docs.px4.io/main/en/dev_setup/building_px4.html](https://docs.px4.io/main/en/dev_setup/building_px4.html) (*Note:* In theory, you can skip installing PX4 source code if you only plan to perform hardware tests on a PX4-compatible board that is flashed with the latest released firmware. However, it is highly discouraged to test directly on hardware without first conducting SITL tests. The package has been tested with the latest stable release (v1.15.2).
+2. **PX4 Autopilot Source:** [https://docs.px4.io/main/en/dev_setup/building_px4.html](https://docs.px4.io/main/en/dev_setup/building_px4.html)
 3. **ROS2 PX4 Setup:** [https://docs.px4.io/main/en/ros2/user_guide.html](https://docs.px4.io/main/en/ros2/user_guide.html)
 4. **ACADOS:** (*Note:* Installation instructions for ACADOS are provided below.
 5. **QGroundControl Daily Build:** [https://docs.qgroundcontrol.com/master/en/qgc-dev-guide/getting_started/index.html](https://docs.qgroundcontrol.com/master/en/qgc-dev-guide/getting_started/index.html)
 6. **Docker (Optiona):** [https://docs.docker.com/engine/install/ubuntu/](https://docs.docker.com/engine/install/ubuntu/)
+
+> [!NOTE]
+>    - In theory, you can skip installing PX4 source code if you only plan to perform hardware tests on a PX4-compatible board that is flashed with the latest released firmware (v1.15.2). However, it is highly discouraged to test directly on hardware without first conducting SITL tests.
+>    - This issue [https://github.com/Auterion/px4-ros2-interface-lib/issues/17](https://github.com/Auterion/px4-ros2-interface-lib/issues/17) on the px4-ros2-interface-lib suggests that [QGC Daily Build](https://docs.qgroundcontrol.com/master/en/qgc-user-guide/releases/daily_builds.html) should work, but I and others have had issues with custom modes not showing up with QGC Daily Build. The solution for me was to compile QGroundControl from source using the [container method](https://docs.qgroundcontrol.com/master/en/qgc-dev-guide/getting_started/container.html).
 
 ## Install
 To install this package you can follow two approaches, either through docker or directly on your system:
