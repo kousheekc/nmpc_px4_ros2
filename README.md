@@ -41,7 +41,7 @@ The OCP is set up in Python and ACADOS generates C code for the solver, which is
 This package has been tested with ROS2 Humble on Ubuntu 22.04. Ensure your system meets the following requirements:  
   
 1. **ROS2 Humble:** [https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html)
-2. **PX4 Autopilot Source:** [https://docs.px4.io/main/en/dev_setup/building_px4.html](https://docs.px4.io/main/en/dev_setup/building_px4.html) (*Note:* In theory, you can skip installing PX4 source code if you only plan to perform hardware tests on a PX4-compatible board that is flashed with the latest released firmware. However, it is highly discouraged to test directly on hardware without first conducting SITL tests)
+2. **PX4 Autopilot Source:** [https://docs.px4.io/main/en/dev_setup/building_px4.html](https://docs.px4.io/main/en/dev_setup/building_px4.html) (*Note:* In theory, you can skip installing PX4 source code if you only plan to perform hardware tests on a PX4-compatible board that is flashed with the latest released firmware. However, it is highly discouraged to test directly on hardware without first conducting SITL tests. The package has been tested with the latest stable release (v1.15.2).
 3. **ROS2 PX4 Setup:** [https://docs.px4.io/main/en/ros2/user_guide.html](https://docs.px4.io/main/en/ros2/user_guide.html)
 4. **ACADOS:** (*Note:* Installation instructions for ACADOS are provided below.
 5. **QGroundControl Daily Build:** [https://docs.qgroundcontrol.com/master/en/qgc-dev-guide/getting_started/index.html](https://docs.qgroundcontrol.com/master/en/qgc-dev-guide/getting_started/index.html)
@@ -53,9 +53,8 @@ To install this package you can follow two approaches, either through docker or 
 ### Docker Approach
 1. Clone package and the direct submodules
 ```bash
-git clone https://github.com/kousheekc/nmpc_px4_ros2.git
+git clone https://github.com/kousheekc/nmpc_px4_ros2.git --recursive
 cd nmpc_px4_ros2
-git submodule update --init --depth 1
 ```
 2. Build docker image
 ```bash
@@ -65,7 +64,6 @@ docker build -t nmpc_px4_ros2 .
 ```bash
 xhost +local:docker
 docker run -it --rm \                               
-    -v $(pwd):/workspace/nmpc_px4_ros2_ws/src \
     -e DISPLAY=$DISPLAY \
     -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
     --env="QT_X11_NO_MITSHM=1" \
@@ -83,16 +81,14 @@ cd ~/nmpc_px4_ros2_ws/src
 ```
 2. Clone package and submodules
 > [!WARNING]
-> The following commands will clone the submodules as well. If your workspace already contains the *px4_msgs* package or the *px4-ros2-interface-lib* this will cause conflicts. This will also clone ACADOS, PX4-Autopilot and Micro-XRCE-DDS-Agent. Modify the [.gitmodules](https://github.com/kousheekc/nmpc_px4_ros2/blob/main/.gitmodules) file, to exclude packages you may already have.
+> The following commands will clone the submodules as well. If your workspace already contains the *px4_msgs* package or the *px4-ros2-interface-lib* this will cause conflicts. This will also clone ACADOS. Modify the [.gitmodules](https://github.com/kousheekc/nmpc_px4_ros2/blob/main/.gitmodules) file, to exclude packages you may already have.
 ```bash
-git clone https://github.com/kousheekc/nmpc_px4_ros2.git
+git clone https://github.com/kousheekc/nmpc_px4_ros2.git --recursive
 cd nmpc_px4_ros2
-git submodule update --init --depth 1
 ```
 3. Install ACADOS and ACADOS python interface
 ```bash
 cd 3rd_party/acados
-git submodule update --init --recursive
 mkdir -p build
 cd build
 cmake -DACADOS_WITH_QPOASES=ON ..
@@ -101,13 +97,6 @@ cd ..
 virtualenv env --python=/usr/bin/python3
 source env/bin/activate
 pip install -e interfaces/acados_template
-```
-
-4. Update environment variables in your .bashrc (replace the paths if you have installed acados elsewhere and replace <use> with your username)
-```bash
-echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"/home/<user>/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados/lib"' >> ~/.bashrc
-echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:"/home/<user>/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/nmpc_px4_ros2/scripts/c_generated_code"' >> ~/.bashrc
-echo 'export ACADOS_SOURCE_DIR="/home/<user>/nmpc_px4_ros2_ws/src/nmpc_px4_ros2/3rd_party/acados"' >> ~/.bashrc
 ```
 
 ## Usage
@@ -130,7 +119,7 @@ colcon build
 3. Launch PX4 Simulation
 ```bash
 cd <PX4-Autopilot source directory>
-make px4_sitl_default gz_x500
+make px4_sitl gz_x500
 ```
 On a different terminal
 ```bash
