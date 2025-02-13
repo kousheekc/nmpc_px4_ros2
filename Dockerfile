@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Clone PX4-Autopilot, modify dd_topics.yaml with custom_dds_topics.yaml run its setup script
-RUN git clone https://github.com/PX4/PX4-Autopilot.git --recursive
+RUN git clone https://github.com/PX4/PX4-Autopilot.git --branch v1.15.2 --recursive
 COPY 3rd_party/custom_dds_topics.yaml PX4-Autopilot/src/modules/uxrce_dds_client/dds_topics.yaml
 RUN bash ./PX4-Autopilot/Tools/setup/ubuntu.sh
 
